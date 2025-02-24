@@ -13,28 +13,31 @@ import {
 
 import { config } from "dotenv";
 import { bs58 } from "@coral-xyz/anchor/dist/cjs/utils/bytes";
+import { CUSTODY_DETAILS } from "./examples/poll-and-stream-oracle-price-updates";
 config();
 
 async function main() {
-    let { position } = generatePositionPda({
-        custody: new PublicKey("AQCGyheWPLeo6Qp9WpYS9m3Qj479t7R636N9ey1rEjEn"),
-        collateralCustody: new PublicKey("AQCGyheWPLeo6Qp9WpYS9m3Qj479t7R636N9ey1rEjEn"),
-        walletAddress: new PublicKey("64S8vTV3ScdaZzGfeEoTipkZX6EiYndv5Az2LWitZ5b3"),
-        side: "long",
-    });
+    const pubWETH = new PublicKey(CUSTODY_DETAILS[CUSTODY_PUBKEY.ETH].mint);
 
-    console.log(position.toBase58());
+    // let { position } = generatePositionPda({
+    //     custody: new PublicKey("AQCGyheWPLeo6Qp9WpYS9m3Qj479t7R636N9ey1rEjEn"),
+    //     collateralCustody: new PublicKey("AQCGyheWPLeo6Qp9WpYS9m3Qj479t7R636N9ey1rEjEn"),
+    //     walletAddress: new PublicKey("64S8vTV3ScdaZzGfeEoTipkZX6EiYndv5Az2LWitZ5b3"),
+    //     side: "long",
+    // });
 
-    let { positionRequest } = generatePositionRequestPda({
-        counter: new BN(537532847),
-        positionPubkey: position,
-        requestChange: "decrease",
-    });
+    // console.log(position.toBase58());
 
-    console.log(positionRequest.toBase58());
-    const pubWETH = new PublicKey("7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs");
-    let PositionRequestAta = await getAssociatedTokenAddress(pubWETH, positionRequest, true);
-    console.log(PositionRequestAta.toBase58());
+    // let { positionRequest } = generatePositionRequestPda({
+    //     counter: new BN(537532847),
+    //     positionPubkey: position,
+    //     requestChange: "decrease",
+    // });
+
+    // console.log(positionRequest.toBase58());
+
+    // let PositionRequestAta = await getAssociatedTokenAddress(pubWETH, positionRequest, true);
+    // console.log(PositionRequestAta.toBase58());
 
     console.log(" Create ranom a long ETH position");
     let owner = new PublicKey("64S8vTV3ScdaZzGfeEoTipkZX6EiYndv5Az2LWitZ5b3");
@@ -59,30 +62,31 @@ async function main() {
         requestChange: "decrease",
     });
 
-    let positionRequestAta = await getAssociatedTokenAddress(pubWETH, positionRequest, true);
+    let positionRequestAta = await getAssociatedTokenAddress(pubWETH, positionRequestEstimate.positionRequest, true);
     const privateKeyBytes = bs58.decode(process.env.PRIVATE_KEY!);
     const keypair = Keypair.fromSecretKey(privateKeyBytes);
     const wallet = new Wallet(keypair);
 
-    console.log("Wallet", wallet.publicKey.toBase58());
-    return;
+    console.log("Wallet:", wallet.publicKey.toBase58());
+    console.log("Counter:", positionRequestEstimate.counter.toString());
+
     const call = JUPITER_PERPETUALS_PROGRAM.methods
         .createDecreasePositionMarketRequest({
-            collateralUsdDelta: positionRequest,
-            sizeUsdDelta: position,
-            priceSlippage: owner,
+            collateralUsdDelta: 0,
+            sizeUsdDelta: 0,
+            priceSlippage: 2635860313,
             jupiterMinimumOut: null,
-            entirePosition: new BN(1000000000),
-            counter: new BN(1000000000),
+            entirePosition: false,
+            counter: positionRequestEstimate.counter,
         })
         .accounts({
             owner,
             receivingAccount,
             perpetuals,
             pool,
-            position,
-            positionRequest: positionEstimate.position,
-            positionRequestAta: positionRequestEstimate.positionRequest,
+            position: positionEstimate.position,
+            positionRequest: positionRequestEstimate.positionRequest,
+            positionRequestAta: positionRequestAta,
             custody,
             collateralCustody,
             desiredMint: pubWETH,
