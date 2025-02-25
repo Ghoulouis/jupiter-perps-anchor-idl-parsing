@@ -161,4 +161,4 @@ export async function subscribeOraclePrices(intervalMs: number = 100) {
     return cache;
 }
 
-subscribeOraclePrices();
+//subscribeOraclePrices();
